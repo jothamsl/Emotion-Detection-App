@@ -1,0 +1,9 @@
+/* Additional CSS for Emotion Detection App */
+.upload-zone { transition: all 0.3s ease; background: rgba(0, 123, 255, 0.05); }
+.upload-zone:hover { transform: translateY(-2px); background: rgba(0, 123, 255, 0.1); }
+.emotion-result { padding: 1rem; background: #f8f9fa; border-radius: 10px; }
+.confidence-high { color: #28a745; }
+.confidence-medium { color: #ffc107; }
+.confidence-low { color: #dc3545; }
+.stats-card { transition: transform 0.2s; }
+.stats-card:hover { transform: translateY(-3px); }
