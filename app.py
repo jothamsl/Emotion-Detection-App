@@ -1,25 +1,31 @@
-from flask import Flask, render_template, request, jsonify
-import os
-import tempfile
-from werkzeug.utils import secure_filename
-from PIL import Image
-import sqlite3
-from datetime import datetime
 import logging
-from model import get_emotion_detector, predict_emotion
+import os
+import sqlite3
+import tempfile
+from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
+from flask import Flask, jsonify, render_template, request
+from model import get_emotion_detector, predict_emotion
+from PIL import Image
+from werkzeug.utils import secure_filename
+
+# Configure logging for production
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "emotion_detection_secret_key_2024"
+app.config["SECRET_KEY"] = os.environ.get(
+    "SECRET_KEY", "emotion_detection_secret_key_2024"
+)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp", "tiff", "webp"}
 
+# Create uploads directory
 UPLOAD_FOLDER = "uploads"
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def allowed_file(filename):
@@ -193,16 +199,34 @@ def too_large(e):
     return jsonify({"error": "File too large. Maximum size is 16MB."}), 413
 
 
-if __name__ == "__main__":
-    try:
-        logger.info("Starting Flask application...")
-        detector = get_emotion_detector()
-        logger.info("Model initialized successfully!")
-    except Exception as e:
-        logger.error(f"Error initializing model: {str(e)}")
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal server error: {str(error)}")
+    return jsonify({"error": "Internal server error"}), 500
 
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Not found"}), 404
+
+
+# Initialize model on startup
+try:
+    logger.info("Initializing emotion detection model...")
+    detector = get_emotion_detector()
+    logger.info("Model initialized successfully!")
+except Exception as e:
+    logger.error(f"Error initializing model: {str(e)}")
+    # Continue running even if model fails to load initially
+
+
+if __name__ == "__main__":
     # Use environment variables for deployment
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") != "production"
+
+    logger.info(f"Starting application on port {port}")
+    logger.info(f"Debug mode: {debug}")
+    logger.info(f"Environment: {os.environ.get('FLASK_ENV', 'development')}")
 
     app.run(host="0.0.0.0", port=port, debug=debug)

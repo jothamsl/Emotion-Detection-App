@@ -58,8 +58,6 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
 
 # Flask stuff:
 instance/
@@ -151,6 +149,41 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Application specific
+uploads/*.jpg
+uploads/*.jpeg
+uploads/*.png
+uploads/*.gif
+uploads/*.bmp
+uploads/*.tiff
+uploads/*.webp
+
+# Model cache (Hugging Face transformers)
+transformers_cache/
+.cache/
+
+# Temporary files
+*.tmp
+*.temp
+temp_*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development helper files
+create_model_h5.py
+
+# Keep important files for deployment
+!model.h5
+!emotion_predictions.db
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

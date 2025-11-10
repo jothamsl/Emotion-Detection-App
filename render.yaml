@@ -1,12 +1,30 @@
 services:
   - type: web
-    name: emotion-detection-app
+    name: emotion-detection-web-app-soboyejo
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    region: oregon
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FLASK_ENV
         value: production
-    plan: free
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - "**/*.py"
+        - "requirements.txt"
+        - "templates/**"
+        - "static/**"
+        - "*.yaml"
+    disk:
+      name: emotion-detection-storage
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1

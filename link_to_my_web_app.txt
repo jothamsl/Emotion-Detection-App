@@ -1,0 +1,42 @@
+Hosting Platform: Render
+Link: https://emotion-detection-web-app-soboyejo.onrender.com
+
+Student: SOBOYEJO-OLUWALASE_23CD034363
+Project: Emotion Detection Web Application
+Course: CSC334 - Python II
+Date: November 2024
+
+Application Features:
+- AI-powered emotion detection from images
+- Live camera capture functionality
+- Real-time emotion analysis
+- Web-based interface with Bootstrap styling
+- SQLite database for prediction storage
+- 7 emotion categories: angry, disgust, fear, happy, neutral, sad, surprise
+
+Deployment Information:
+- Platform: Render (Free Tier)
+- Framework: Flask with Gunicorn
+- ML Model: Hugging Face Transformers (dima806/facial_emotions_image_detection)
+- Database: SQLite
+- Frontend: HTML5, CSS3, JavaScript, Bootstrap 5
+
+Technical Specifications:
+- Python 3.11
+- PyTorch backend
+- Responsive design for mobile and desktop
+- File upload and drag-drop support
+- Real-time camera access via WebRTC
+- Production-ready configuration
+
+Note: Replace the URL above with your actual Render deployment URL once the application is successfully deployed.
+
+To deploy on Render:
+1. Push code to GitHub repository
+2. Connect GitHub repo to Render
+3. Configure as Python web service
+4. Use provided render.yaml configuration
+5. Deploy and update this file with live URL
+
+Repository: https://github.com/YOUR_GITHUB_USERNAME/emotion-detection-web-app-soboyejo
+Deployment Status: Ready for production deployment
