@@ -2,8 +2,10 @@
 Simple Emotion Detection Model Module
 ====================================
 Simplified emotion detection using a single Hugging Face model for image upload only.
+Optimized for low-memory environments like Render's free tier.
 """
 
+import gc
 import logging
 import os
 import sqlite3
@@ -48,8 +50,9 @@ class EmotionDetector:
         # Initialize database
         self._init_database()
 
-        # Load model
-        self.load_model()
+        # Lazy loading - don't load model until first prediction
+        # This helps with memory management on low-memory environments
+        self._model_loaded = False
 
     def _init_database(self):
         """Initialize SQLite database for storing predictions"""
@@ -79,20 +82,42 @@ class EmotionDetector:
     def load_model(self):
         """
         Load the Hugging Face model and processor
+        Optimized for low-memory environments (CPU-only, minimal memory footprint)
         """
+        if self._model_loaded:
+            return True
+
         try:
             logger.info(f"Loading emotion detection model: {self.model_name}")
 
-            # Load processor and model
-            self.processor = AutoImageProcessor.from_pretrained(self.model_name)
-            self.model = AutoModelForImageClassification.from_pretrained(
-                self.model_name, torch_dtype=torch.float32
+            # Force garbage collection before loading
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            # Load processor with minimal settings
+            self.processor = AutoImageProcessor.from_pretrained(
+                self.model_name,
+                use_fast=True
             )
 
-            # Set model to evaluation mode
+            # Load model with memory optimizations
+            # Use float16 for reduced memory, force CPU to avoid GPU memory issues
+            self.model = AutoModelForImageClassification.from_pretrained(
+                self.model_name,
+                torch_dtype=torch.float16,  # Use half precision to reduce memory
+                low_cpu_mem_usage=True,     # Optimize for low memory
+                device_map="cpu"            # Force CPU usage
+            )
+
+            # Set model to evaluation mode and disable gradients
             self.model.eval()
 
-            logger.info("Model loaded successfully!")
+            # Disable gradient computation globally for inference
+            torch.set_grad_enabled(False)
+
+            self._model_loaded = True
+            logger.info("Model loaded successfully with memory optimizations!")
             return True
 
         except Exception as e:
@@ -155,8 +180,12 @@ class EmotionDetector:
             dict: Contains 'emotion', 'confidence', and 'all_scores'
         """
         try:
+            # Lazy load model on first prediction
+            if not self._model_loaded:
+                self.load_model()
+
             if self.model is None or self.processor is None:
-                raise RuntimeError("Model not loaded. Call load_model() first.")
+                raise RuntimeError("Model failed to load.")
 
             # Preprocess image
             image = self.preprocess_image(image_input)
@@ -164,10 +193,19 @@ class EmotionDetector:
             # Process image for model input
             inputs = self.processor(images=image, return_tensors="pt")
 
-            # Make prediction
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+            # Convert inputs to float16 to match model dtype
+            if inputs.get("pixel_values") is not None:
+                inputs["pixel_values"] = inputs["pixel_values"].to(torch.float16)
+
+            # Make prediction (gradients already disabled globally)
+            outputs = self.model(**inputs)
+            # Convert back to float32 for softmax precision
+            logits = outputs.logits.to(torch.float32)
+            predictions = torch.nn.functional.softmax(logits, dim=-1)
+
+            # Clean up to free memory
+            del inputs, outputs, logits
+            gc.collect()
 
             # Get prediction results
             predicted_class_idx = predictions.argmax().item()

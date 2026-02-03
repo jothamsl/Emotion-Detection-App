@@ -210,14 +210,9 @@ def not_found(error):
     return jsonify({"error": "Not found"}), 404
 
 
-# Initialize model on startup
-try:
-    logger.info("Initializing emotion detection model...")
-    detector = get_emotion_detector()
-    logger.info("Model initialized successfully!")
-except Exception as e:
-    logger.error(f"Error initializing model: {str(e)}")
-    # Continue running even if model fails to load initially
+# Lazy loading - model will be loaded on first prediction request
+# This reduces startup memory usage for low-memory environments like Render's free tier
+logger.info("Application starting with lazy model loading enabled...")
 
 
 if __name__ == "__main__":
